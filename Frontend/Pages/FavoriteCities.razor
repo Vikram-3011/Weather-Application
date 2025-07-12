@@ -1,0 +1,48 @@
+﻿@page "/favorites"
+@inject FavoriteCityService FavoriteService
+@inject UserStateManager userState
+@using MudBlazor
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else if (favoriteCities?.Count > 0)
+{
+    <MudGrid>
+        @foreach (var city in favoriteCities)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Class="p-4">
+                    <MudText Typo="Typo.h6">@city</MudText>
+                    <MudButton OnClick="() => RemoveCity(city)" Color="Color.Error" Variant="Variant.Text">Remove</MudButton>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else
+{
+    <MudAlert Severity="Severity.Info">No favorite cities found.</MudAlert>
+}
+
+@code {
+    private List<string> favoriteCities = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        if (!string.IsNullOrWhiteSpace(userState.UserEmail))
+        {
+            favoriteCities = await FavoriteService.GetFavoriteCities(userState.UserEmail!);
+        }
+        isLoading = false;
+    }
+
+    private async Task RemoveCity(string city)
+    {
+        await FavoriteService.RemoveFavoriteCity(userState.UserEmail!, city);
+        favoriteCities = await FavoriteService.GetFavoriteCities(userState.UserEmail!);
+    }
+}

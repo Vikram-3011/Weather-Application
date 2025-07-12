@@ -1,0 +1,48 @@
+﻿@page "/alert-preferences"
+@inject AlertPreferenceService PreferenceService
+@inject UserStateManager UserState
+@inject ISnackbar Snackbar
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Small">
+    <MudCard Class="pa-4 mt-4" Elevation="4">
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Alert Preferences</MudText>
+        </MudCardHeader>
+
+        <MudCardContent>
+            <MudSelect T="string"
+                       Label="Select alert types"
+                       MultiSelection="true"
+                       SelectedValues="@selected"
+                       SelectedValuesChanged="OnChanged">
+
+                <MudSelectItem Value="@("Temperature")">Temperature Alert</MudSelectItem>
+                <MudSelectItem Value="@("Wind")">Wind Speed Alert</MudSelectItem>
+                <MudSelectItem Value="@("Rain")">Rain Alert</MudSelectItem>
+            </MudSelect>
+
+            <MudButton OnClick="Save" Color="Color.Primary" Class="mt-4">Save</MudButton>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+@code {
+    private HashSet<string> selected = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var prefs = await PreferenceService.GetPreferencesAsync(UserState.UserEmail);
+        selected = new HashSet<string>(prefs);
+    }
+
+    private void OnChanged(IEnumerable<string> newPrefs)
+    {
+        selected = new HashSet<string>(newPrefs);
+    }
+
+    private async Task Save()
+    {
+        await PreferenceService.SavePreferencesAsync(UserState.UserEmail, selected.ToList());
+        Snackbar.Add("Preferences saved!", Severity.Success);
+    }
+}

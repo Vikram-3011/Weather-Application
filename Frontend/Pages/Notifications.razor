@@ -1,0 +1,71 @@
+﻿@page "/notifications"
+@inject WeatherAlertService AlertService
+@inject FavoriteCityService FavoriteService
+@inject UserStateManager UserState
+@using MudBlazor
+@using Frontend.Models;
+@inject NavigationManager NavigationManager
+
+<PageTitle>Alerts</PageTitle>
+
+<h3>Weather Alerts</h3>
+
+<MudIconButton Icon="@Icons.Material.Filled.RoomPreferences"
+               Color="Color.Primary"
+               OnClick="GoToNotifications" />
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (alerts.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">No alerts available for your location or favorite cities.</MudAlert>
+}
+else
+{
+    @foreach (var alert in alerts)
+    {
+        <MudPaper Class="p-4 my-2">
+            <MudText Typo="Typo.h6">@alert.Headline</MudText>
+            <MudText>@alert.Desc</MudText>
+            <MudText>Severity: @alert.Severity</MudText>
+            <MudText>Area: @alert.Areas</MudText>
+            <MudText>Event: @alert.Event</MudText>
+            <MudText>Effective: @alert.Effective</MudText>
+            <MudText>Expires: @alert.Expires</MudText>
+        </MudPaper>
+    }
+}
+
+@code {
+    private List<WeatherAlert> alerts = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(UserState.UserEmail))
+            return;
+
+        isLoading = true;
+
+        try
+        {
+            // Step 1: Get all favorite cities
+            var cities = await FavoriteService.GetFavoriteCities(UserState.UserEmail);
+
+            // Step 2: Call backend once, passing email and cities
+            alerts = await AlertService.GetAllAlerts(UserState.UserEmail, cities);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Notification ERROR] {ex.Message}");
+        }
+
+        isLoading = false;
+    }
+
+    private void GoToNotifications()
+    {
+        NavigationManager.NavigateTo("/alert-preferences");
+    }
+}

@@ -1,0 +1,248 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+@inject NavigationManager NavigationManager
+@using Frontend.Services
+@inject UserStateManager userState
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@using Frontend.Pages
+
+<MudThemeProvider IsDarkMode="@isDarkMode" />
+<MudPopoverProvider />
+
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <div class="weather-background">
+
+    <MudAppBar Elevation="0" Class="d-flex justify-between px-4" Style="background-color: transparent;">
+
+        <div class="d-flex align-center">
+            <MudTooltip Text="Menu">
+                <MudIconButton Icon="@Icons.Material.Filled.List" Style="color:white;" OnClick="@ToggleDrawer" />
+            </MudTooltip>
+        </div>
+
+        <div class="d-flex align-center">
+            @if (isDarkMode)
+            {
+                <MudTooltip Text=" Light Mode">
+                    <MudIconButton Icon="@Icons.Material.Filled.LightMode"
+                                   Color="Color.Inherit"
+                                   OnClick="@ToggleDarkMode" />
+                </MudTooltip>
+            }
+            else
+            {
+                <MudTooltip Text=" Dark Mode">
+                    <MudIconButton Icon="@Icons.Material.Filled.DarkMode"
+                                   Color="Color.Inherit"
+                                   OnClick="@ToggleDarkMode" />
+                </MudTooltip>
+            }
+
+            @if (!userState.IsLoggedIn())
+            {
+                <MudButton OnClick="@(() => Navigation.NavigateTo("/login"))" Color="Color.Primary" Variant="Variant.Text" Class="ml-2">
+                    Login
+                </MudButton>
+               
+            }
+            else
+            {
+                <MudButton OnClick="Logout" Color="Color.Primary" Variant="Variant.Text" Class="ml-2">
+                    Logout
+                </MudButton>
+            }
+            <MudTooltip Text="Profile">
+                <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" OnClick="@ToggleOpen" />
+            </MudTooltip>
+            <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                           Color="Color.Primary"
+                           OnClick="GoToNotifications" />
+        </div>
+
+    </MudAppBar>
+    <MudPopover Open="@_open" Fixed="true" AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.TopRight" Class="px-4 pt-4 profile-popover" OnClose="@ClosePopover">
+        <div class="d-flex flex-column">
+
+            @if (userState.IsLoggedIn())
+            {
+                
+                <MudText Typo="Typo.body2">@userState.User?.Email</MudText>
+                <MudDivider Class="my-2" />
+                <MudButton OnClick="@(() => NavigateTo("/user-profile"))" Variant="Variant.Text" Style="justify-content: center; text-align: center; " FullWidth="true">Profile </MudButton>
+
+                <MudButton OnClick="Logout" StartIcon="@Icons.Material.Filled.Logout" Variant="Variant.Text" Color="Color.Error" FullWidth="true">Logout</MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Login" Href="/login">Login</MudButton>
+
+            }
+        </div>
+    </MudPopover>
+
+    <MudDrawer Open="@isOpen" Variant="DrawerVariant.Persistent">
+        <MudDrawerHeader>
+
+            <MudButton Typo="Typo.h5" OnClick="@(() => NavigateTo("/"))">Weather Forecast</MudButton>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+
+     <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+    @if (userState.IsLoggedIn())
+{
+    <!-- Floating Button -->
+    <MudIconButton Icon="@Icons.Material.Outlined.SmartToy"
+                   Class="chatbot-icon-button"
+                   Color="Color.Default"
+                   Size="Size.Large"
+                   OnClick="ToggleChatbot" />
+
+    @if (_showChatbot)
+    {
+        <div class="chatbot-container">
+            <MudCard Class="chatbot-card">
+                <div class="chatbot-header">
+                    <MudText Class="chatbot-title" Color="Color.Primary">Chatkaro</MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Class="chatbot-fabclose" OnClick="ToggleChatbot" />
+                </div>
+                <WeatherChatBot />
+            </MudCard>
+        </div>
+    }
+}
+
+    </div>
+</MudLayout>
+<style>
+     .chatbot-icon-button {
+        position: fixed;
+        bottom: 50px;
+        right: 20px;
+        z-index: 9999;
+        color: white; /* Or any color matching your theme */
+        background-color: blueviolet;
+        border: none;
+    }
+
+
+    .chatbot-container {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .chatbot-card {
+        width: 320px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .chatbot-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .chatbot-title {
+        font-weight: bold;
+        font-size: large;
+
+    }
+
+    .weather-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('/images/tech 12.jpg'); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+    opacity: 0.9; /* adjust as needed */
+}
+
+    .chatbot-fabclose {
+        color: white;
+        transition: transform 0.2s ease;
+    }
+
+        .chatbot-fabclose:hover {
+            transform: scale(1.2);
+            color: #f44336;
+        }
+
+
+</style> 
+@code{
+    private bool isOpen = false;
+    private bool isDarkMode = true;
+    private bool _open;
+    private bool _showChatbot = false;
+    private void ToggleDrawer() => isOpen = !isOpen;
+    private void ToggleDarkMode() => isDarkMode = !isDarkMode;
+
+    private void NavigateTo(string route)
+    {
+        _open = false;
+        NavigationManager.NavigateTo(route);
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.SignOut();
+        Navigation.NavigateTo("/");
+    }
+    private Task RemoveClickListener() => Task.CompletedTask;
+    private Task AddClickListener() => Task.CompletedTask;
+
+    private void ToggleChatbot()
+    {
+        _showChatbot = !_showChatbot;
+    }
+
+    private void ClosePopover()
+    {
+        _open = false;
+        RemoveClickListener();
+        StateHasChanged();
+    }
+    private void ToggleOpen()
+    {
+        _open = !_open;
+        if (_open)
+        {
+            AddClickListener();
+        }
+        else
+        {
+            RemoveClickListener();
+        }
+        StateHasChanged();
+    }
+    private void GoToNotifications()
+    {
+        Navigation.NavigateTo("/notifications");
+    }
+}

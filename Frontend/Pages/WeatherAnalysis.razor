@@ -1,0 +1,56 @@
+﻿@page "/analysis"
+@inject WeatherHistoryService WeatherService
+@using WeatherApi.Shared
+@using MudBlazor
+
+<MudCard Class="weather-card rounded-xl mx-auto my-6 py-8 px-6 glass-card" Elevation="5">
+    <MudContainer MaxWidth="MaxWidth.Medium">
+        <MudGrid Spacing="3" Justify="Justify.Center">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_city" Label="Enter City" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="_days" Label="Select Days">
+                    <MudSelectItem Value="1">1 Day</MudSelectItem>
+                    <MudSelectItem Value="7">7 Days</MudSelectItem>
+                    <MudSelectItem Value="30">30 Days</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton OnClick="FetchWeatherData" Color="Color.Primary">Get Weather History</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+</MudCard>
+
+@if (_weatherData?.Any() == true)
+{
+    <MudTable Items="_weatherData">
+        <HeaderContent>
+            <MudTh>Date</MudTh>
+            <MudTh>Temp (°C)</MudTh>
+            <MudTh>Humidity (%)</MudTh>
+            <MudTh>Wind (m/s)</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Date">@context.Date.ToShortDateString()</MudTd>
+            <MudTd>@context.Temperature</MudTd>
+            <MudTd>@context.Humidity</MudTd>
+            <MudTd>@context.WindSpeed</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private string _city = "";
+    private int _days = 7;
+    private List<WeatherData>? _weatherData;
+
+    private async Task FetchWeatherData()
+    {
+        if (!string.IsNullOrWhiteSpace(_city))
+        {
+            _weatherData = await WeatherService.GetWeatherHistory(_city, _days);
+        }
+    }
+}

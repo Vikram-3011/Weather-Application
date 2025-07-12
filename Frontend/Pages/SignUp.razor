@@ -1,0 +1,49 @@
+﻿@page "/signup"
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+    <MudCard Class="glassmorphism-card pa-6 rounded-xl shadow-lg">
+        <MudCardHeader>
+            <MudText Typo="Typo.h4" Align="Align.Center">Create Account</MudText>
+        </MudCardHeader>
+
+        <MudCardContent>
+            <MudTextField T="string" @bind-Value="email" Label="Email" Variant="Variant.Outlined" Required Class="mb-3" />
+            <MudTextField T="string" @bind-Value="password" Label="Password" Variant="Variant.Outlined" InputType="InputType.Password" Required />
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <MudText Color="Color.Error" Class="mt-2">@errorMessage</MudText>
+            }
+
+            <MudButton OnClick="HandleSignUp" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" FullWidth>Sign Up</MudButton>
+
+            <MudText Class="mt-3 text-center">
+                Already have an account?
+                <MudLink Href="/login" Class="ml-1">Login</MudLink>
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string? errorMessage;
+
+    private async Task HandleSignUp()
+    {
+        errorMessage = null;
+        var result = await AuthService.SignUp(email, password);
+        if (result == null)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        else
+        {
+            errorMessage = result;
+        }
+    }
+}

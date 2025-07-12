@@ -1,0 +1,74 @@
+﻿@page "/compare"
+@inject ISnackbar Snackbar
+@using MudBlazor
+@inject WeatherCompareService WeatherService
+@using Frontend.Models
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-10 d-flex flex-column align-center">
+    <MudPaper Class="glass-card p-8 mb-10" Style="max-width: 700px; width: 100%;">
+        <MudText Typo="Typo.h4" Class="text-center mb-4">🌍 Compare Cities</MudText>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="city1" Label="First City" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.LocationCity" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="city2" Label="Second City" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.LocationCity" />
+            </MudItem>
+        </MudGrid>
+
+        <MudButton OnClick="CompareCities" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">🔍 Compare</MudButton>
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+    }
+
+    @if (weatherData != null && weatherData.Length == 2)
+    {
+        <MudGrid Spacing="4" Class="mt-6">
+            @foreach (var data in weatherData)
+            {
+                <MudItem xs="12" sm="6">
+                    <MudPaper Class="p-4 text-center">
+                        <MudText Typo="Typo.h6">@data.City</MudText>
+                        <MudText>🌡 Temp: @data.Temp °C</MudText>
+                        <MudText>💧 Humidity: @data.Humidity %</MudText>
+                        <MudText>💨 Wind: @data.WindSpeed m/s</MudText>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private string city1 = "";
+    private string city2 = "";
+    private WeatherData[]? weatherData;
+    private bool isLoading = false;
+
+    private async Task CompareCities()
+    {
+        if (string.IsNullOrWhiteSpace(city1) || string.IsNullOrWhiteSpace(city2))
+        {
+            Snackbar.Add("Please enter both city names.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+            weatherData = await WeatherService.CompareCitiesAsync(city1, city2);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

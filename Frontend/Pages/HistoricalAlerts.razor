@@ -1,0 +1,73 @@
+﻿@page "/historical-alerts"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject UserStateManager userState
+@using MudBlazor
+@using Frontend.Services
+
+<PageTitle>Historical Weather Alerts</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudCard Class="glassmorphism-card-wide pa-4 rounded-lg mt-5" Elevation="0">
+        <MudCardHeader>
+            <MudText Typo="Typo.h4" Class="login-title">Historical Weather Alerts</MudText>
+        </MudCardHeader>
+
+        <MudCardContent>
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+            }
+            else if (historicalAlerts?.Count > 0)
+            {
+                <MudTable Items="@historicalAlerts">
+                    <HeaderContent>
+                        <MudTh>City</MudTh>
+                        <MudTh>Headline</MudTh>
+                        <MudTh>Severity</MudTh>
+                        <MudTh>Date & Time</MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="alert">
+                        <MudTd>@alert.CityName</MudTd>
+                        <MudTd>@alert.Headline</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Color="@(alert.Severity == "Severe" ? Color.Error : Color.Warning)">
+                                @alert.Severity
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>@alert.DateRecorded.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No historical alerts available.</MudAlert>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private List<WeatherAlertHistory> historicalAlerts;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        var email = userState.UserEmail;
+        if (!string.IsNullOrEmpty(email))
+        {
+            historicalAlerts = await Http.GetFromJsonAsync<List<WeatherAlertHistory>>(
+                $"api/AlertPreference/historical?email={Uri.EscapeDataString(email)}");
+        }
+        isLoading = false;
+    }
+
+    public class WeatherAlertHistory
+    {
+        public string CityName { get; set; }
+        public string Headline { get; set; }
+        public string Severity { get; set; }
+        public DateTime DateRecorded { get; set; }
+    }
+}

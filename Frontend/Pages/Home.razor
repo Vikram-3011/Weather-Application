@@ -1,0 +1,200 @@
+﻿@page "/"
+@inject HttpClient Http
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+@inject UserStateManager userState
+@implements IDisposable
+@using Frontend.Services
+
+<MudGrid Class="mt-4" GutterSize="3">
+    <!-- LEFT COLUMN -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4 mb-4" Style="background-color: rgba(255,255,255,0.05); backdrop-filter: blur(8px); border-radius: 12px;">
+            <MudText Typo="Typo.h5" Class="mb-2" Style="color:white;">📍 Your Location</MudText>
+
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+            }
+            else if (!string.IsNullOrWhiteSpace(LocationText))
+            {
+                <MudText Style="color:white;"><strong>Your Location:</strong> @LocationText</MudText>
+            }
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <MudText Color="Color.Error">@ErrorMessage</MudText>
+            }
+
+            <MudButton OnClick="FetchUserLocation" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">
+                Get My Location
+            </MudButton>
+        </MudPaper>
+
+        @if (CurrentWeather != null)
+        {
+            <MudCard Class="edit-card text-center mb-6">
+                <MudText Typo="Typo.h6">@CurrentWeather.CityName, @CurrentWeather.Country</MudText>
+                <MudText Typo="Typo.body1">@CurrentWeather.Description</MudText>
+                <MudText Typo="Typo.body2">@CurrentWeather.TempMin°C</MudText>
+            </MudCard>
+        }
+    </MudItem>
+
+    <!-- RIGHT COLUMN -->
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.h5" Class="mb-2" Style="color:white;">🌆 Top Cities Weather</MudText>
+
+        <div style="max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 10px;">
+            <MudGrid GutterSize="3">
+                @foreach (var city in topCities)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudCard Class="edit-card text-center mb-4">
+                            <MudText Typo="Typo.h6">@city.CityName, @city.Country</MudText>
+                            <img src="@GetWeatherIcon(city.Icon)" width="80" height="80" />
+                            <MudText Typo="Typo.h6">@city.Description</MudText>
+                            <MudText Typo="Typo.body1">@($"{city.TempMin:F1}°C - {city.TempMax:F1}°C")</MudText>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </div>
+    </MudItem>
+</MudGrid>
+
+<style>
+    .edit-card {
+        backdrop-filter: blur(12px);
+        background-color: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        color: white;
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+</style>
+@code {
+    private List<CityWeatherForecastDto> topCities;
+    private bool isLoading = true;
+    private string LocationText;
+    private string ErrorMessage;
+    private bool IsLoading = false;
+    private CityWeatherForecastDto CurrentWeather;
+    
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        topCities = await Http.GetFromJsonAsync<List<CityWeatherForecastDto>>("api/weather/topcities");
+        isLoading = false;
+        await FetchCurrentLocationWeather();
+    }
+
+    public class LocationDto
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public double Accuracy { get; set; }
+    }
+
+    private async Task FetchUserLocation()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var location = await JSRuntime.InvokeAsync<LocationDto>("getUserLocation");
+            var response = await Http.PostAsJsonAsync("api/location", location);
+            if (response.IsSuccessStatusCode)
+            {
+                LocationText = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                ErrorMessage = "Failed to get location from server.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Error: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task FetchCurrentLocationWeather()
+    {
+        try
+        {
+            var location = await JSRuntime.InvokeAsync<Location>("getUserLocation");
+            var response = await Http.GetFromJsonAsync<CityWeatherForecastDto>($"api/weather/forecast-by-coordinates?lat={location.Latitude}&lon={location.Longitude}");
+            CurrentWeather = response;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Unable to fetch location or weather.";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        userState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        userState.OnChange -= StateHasChanged;
+    }
+
+    private string GetWeatherIcon(string iconCode)
+    {
+        return $"https://openweathermap.org/img/wn/{iconCode}@2x.png";
+    }
+
+    public class CityWeatherForecastDto
+    {
+        public string CityName { get; set; }
+        public string Country { get; set; }
+        public float TempMin { get; set; }
+        public float TempMax { get; set; }
+        public string Description { get; set; }
+        public string Icon { get; set; }
+    }
+
+    public class Location
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public double Accuracy { get; set; }
+    }
+
+}
+<script>
+
+        window.getUserLocation = async function () {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject('Geolocation is not supported by your browser');
+            } else {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        });
+                    },
+                    (error) => {
+                        reject(error.message);
+                    }
+                );
+            }
+        });
+    };
+
+</script>

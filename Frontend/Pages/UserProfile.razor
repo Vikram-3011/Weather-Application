@@ -1,0 +1,64 @@
+﻿@page "/user-profile"
+@inject PersonalInfoService PersonalInfoService
+@inject UserStateManager userState
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@using MudBlazor
+<MudPaper Elevation="4" Class="p-6 mt-4 mx-auto" MaxWidth="700px" Style="color: white;">
+    <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4">User Profile</MudText>
+
+    <MudTextField T="string" Label="Name" @bind-Value="personalInfo.Name" FullWidth="true" Class="mb-3" />
+    <MudTextField T="string" Label="Email" @bind-Value="personalInfo.Email" FullWidth="true" Class="mb-3" Disabled />
+    <MudTextField T="string" Label="Phone" @bind-Value="personalInfo.Phone" FullWidth="true" Class="mb-3" />
+    <MudTextField T="string" Label="City" @bind-Value="personalInfo.City" FullWidth="true" Class="mb-3" />
+    <MudTextField T="string" Label="Country" @bind-Value="personalInfo.Country" FullWidth="true" Class="mb-3" />
+
+    <MudButton OnClick="SubmitForm" Color="Color.Primary" Variant="Variant.Filled">Update</MudButton>
+    <MudStack Row="true" JustifyContent="JustifyContent.Start" Class="mt-4 ml-3">
+        <MudButton Color="Color.Info" OnClick="HandleChangePassword" Variant="Variant.Filled">
+            Change Password
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private PersonalInfo personalInfo = new();
+    private bool isLoading = true;
+    private string currentPassword = string.Empty;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (userState.IsLoggedIn())
+        {
+            var email = userState.User?.Email;
+            if (!string.IsNullOrEmpty(email))
+            {
+                var existing = await PersonalInfoService.GetUserByEmailAsync(email);
+                if (existing != null)
+                    personalInfo = existing;
+                else
+                    personalInfo.Email = email; // fill email for new user
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private async Task SubmitForm()
+    {
+        Console.WriteLine($"Submitting: {personalInfo.Email} | {personalInfo.Name}");
+
+        var result = await PersonalInfoService.SavePersonalInfoAsync(personalInfo);
+        if (result)
+            Snackbar.Add("Successfully saved profile", Severity.Success);
+        else
+            Snackbar.Add("Failed to save profile", Severity.Error);
+    }
+
+    private void HandleChangePassword()
+    {
+        NavigationManager.NavigateTo("/change-password");
+    }
+}

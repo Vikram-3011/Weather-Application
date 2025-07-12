@@ -1,0 +1,71 @@
+﻿@inject UserStateManager userState
+@inject NavigationManager NavigationManager
+@using MudBlazor
+
+<MudNavMenu>
+    <MudNavLink Href="#" Icon="@Icons.Material.Filled.Home" Class="nav-button">Home</MudNavLink>
+
+    <MudNavLink Href="/weather" Icon="@Icons.Material.Filled.WbSunny" Class="nav-button">Weather Forecast</MudNavLink>
+
+    @if (userState.IsLoggedIn())
+    {
+        <MudNavLink Href="/favorites" Icon="@Icons.Material.Filled.Favorite" Class="nav-button">Favorites City</MudNavLink>
+        <MudNavLink Href="/analysis" Icon="@Icons.Material.Filled.Analytics" Class="nav-button"> Analysis</MudNavLink>
+        <MudNavLink Href="/chatbot" Icon="@Icons.Material.Filled.Analytics" Class="nav-button"> compare city</MudNavLink>
+    }
+</MudNavMenu>
+
+<style>
+    /* Base nav-button styling */
+    /* Base nav-button styling */
+    .nav-button {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-weight: 500;
+        transition: all 0.3s ease-in-out;
+        background: none !important; /* Remove background */
+        box-shadow: none; /* No shadow by default */
+    }
+
+        /* Hover & Active Effects */
+        .nav-button:hover,
+        .mud-nav-link-active {
+            transform: translateY(-2px); /* Lift effect */
+            font-size: 1.05rem;
+            font-weight: bold;
+            text-decoration: none;
+            box-shadow: 0px 4px 10px rgba(0, 173, 255, 0.5); /* Violet glow */
+            background: transparent !important; /* Ensure no background */
+        }
+
+    /* Override default MudBlazor active link styling */
+    .mud-nav-link {
+        background: none !important;
+        box-shadow: none !important;
+    }
+
+        .mud-nav-link:hover {
+            background: none !important;
+        }
+
+    .mud-nav-item:hover {
+        background: none !important;
+    }
+
+</style>
+
+
+
+@code
+{
+    protected override void OnInitialized() => userState.OnChange += StateChange;
+
+    private void StateChange() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => userState.OnChange -= StateChange;
+
+   
+}
